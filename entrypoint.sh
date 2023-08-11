@@ -51,9 +51,12 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha=(( $INPUT_REDUNDANCY == true ? true : false)) --strategy immediate 
+  # Redundancy for --ha flag. Defaults to false
+  redundancy=$( [ $INPUT_REDUNDANCY == true ] && echo -n "true" || echo -n "false" )
+
+  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha=$redundancy --strategy immediate 
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region"  --ha=(( $INPUT_REDUNDANCY == true ? true : false)) --strategy immediate 
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --ha=$redundancy --strategy immediate 
 fi
 
 # Scale the VM
