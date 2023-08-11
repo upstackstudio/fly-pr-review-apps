@@ -52,7 +52,11 @@ if ! flyctl status --app "$app"; then
   fi
 
   # Redundancy for --ha flag. Defaults to false
-  redundancy=$( [ $INPUT_REDUNDANCY == true ] && echo -n "true" || echo -n "false" )
+  if [ -n "$INPUT_REDUNDANCY" = true ]; then
+    redundancy=true
+  else
+    redundancy=false
+  fi
 
   flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha=$redundancy --strategy immediate 
 elif [ "$INPUT_UPDATE" != "false" ]; then
