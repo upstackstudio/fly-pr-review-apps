@@ -34,6 +34,14 @@ if [ "$EVENT_TYPE" = "closed" ]; then
   exit 0
 fi
 
+# Optional --ha redundancy flag. Defaults to false
+redundancy="false"
+if [ "$INPUT_REDUNDANCY" = "true" ]; then
+  redundancy="true"
+else
+  redundancy="false"
+fi
+
 # Deploy the Fly app, creating it first if needed.
 if ! flyctl status --app "$app"; then
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
@@ -51,9 +59,9 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha=false --strategy immediate 
+  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --ha=false --strategy immediate 
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
 fi
 
 # Scale the VM
