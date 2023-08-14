@@ -34,6 +34,14 @@ if [ "$EVENT_TYPE" = "closed" ]; then
   exit 0
 fi
 
+# Optional Dockerfile image flag. If not specified, expects for a Dockerfile called "Dockerfile".
+dockerfile="Dockerfile"
+if [ -n "$image" ]; then
+  dockerfile="$image"
+else
+  dockerfile="Dockerfile"
+fi
+
 # Optional --ha redundancy flag. Defaults to false
 redundancy="false"
 if [ "$INPUT_REDUNDANCY" = "true" ]; then
@@ -46,7 +54,7 @@ fi
 if ! flyctl status --app "$app"; then
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
   cp "$config" "$config.bak"
-  flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --region "$region" --org "$org"
+  flyctl launch --no-deploy --copy-config --name "$app" --image "$dockerfile" --region "$region" --org "$org"
   # Restore the original config file
   cp "$config.bak" "$config"
 
@@ -59,9 +67,9 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
+  flyctl deploy --app "$app" --region "$region" --image "$dockerfile" --region "$region" --ha="$redundancy" --strategy immediate 
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$dockerfile" --region "$region" --ha="$redundancy" --strategy immediate 
 fi
 
 # Scale the VM
