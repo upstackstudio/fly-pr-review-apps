@@ -1,6 +1,6 @@
 #!/bin/sh -l
 
-set -ex
+set -ex -o pipefail
 
 if [ -n "$INPUT_PATH" ]; then
   # Allow user to change directories in which to run Fly commands.
@@ -45,10 +45,10 @@ fi
 # Deploy the Fly app, creating it first if needed.
 if ! flyctl status --app "$app"; then
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
-  # cp "$config" "$config.bak"
-  flyctl launch --no-deploy --name "$app" --region "$region" --org "$org" --copy-config
+  cp "$config" "$config.bak"
+  flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --region "$region" --org "$org"
   # Restore the original config file
-  # cp "$config.bak" "$config"
+  cp "$config.bak" "$config"
 
   if [ -n "$INPUT_SECRETS" ]; then
     echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
@@ -59,9 +59,9 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --region "$region" --ha="$redundancy" --strategy immediate 
+  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --config "$config" --app "$app" --region "$region" --region "$region" --ha="$redundancy" --strategy immediate 
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --ha="$redundancy" --strategy immediate 
 fi
 
 # Scale the VM
