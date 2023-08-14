@@ -45,10 +45,10 @@ fi
 # Deploy the Fly app, creating it first if needed.
 if ! flyctl status --app "$app"; then
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
-  cp "$config" "$config.bak"
+  # cp "$config" "$config.bak"
   flyctl launch --no-deploy --name "$app" --region "$region" --org "$org" --copy-config
   # Restore the original config file
-  cp "$config.bak" "$config"
+  # cp "$config.bak" "$config"
 
   if [ -n "$INPUT_SECRETS" ]; then
     echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
