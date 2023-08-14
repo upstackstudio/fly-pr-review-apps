@@ -1,6 +1,6 @@
-#!/bin/bash -l
+#!/bin/sh -l
 
-set -x -o pipefail
+set -ex -o pipefail
 
 if [ -n "$INPUT_PATH" ]; then
   # Allow user to change directories in which to run Fly commands.
@@ -27,6 +27,9 @@ if ! echo "$app" | grep "$PR_NUMBER"; then
   echo "For safety, this action requires the app's name to contain the PR number."
   exit 1
 fi
+
+# Testing: print out the Flyctl version
+flyctl version
 
 # PR was closed - remove the Fly app if one exists and exit.
 if [ "$EVENT_TYPE" = "closed" ]; then
