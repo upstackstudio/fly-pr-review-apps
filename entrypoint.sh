@@ -1,6 +1,6 @@
 #!/bin/sh -l
 
-set -ex -o pipefail
+set -x -o pipefail
 
 if [ -n "$INPUT_PATH" ]; then
   # Allow user to change directories in which to run Fly commands.
