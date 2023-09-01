@@ -18,6 +18,8 @@ EVENT_TYPE=$(jq -r .action /github/workflow/event.json)
 
 # Default the Fly app name to pr-{number}-{repo_name}
 app="${INPUT_NAME:-pr-$PR_NUMBER-$REPO_NAME}"
+# Default the Fly DB app name to pr-{number}-{repo_name}-db
+db_app="$app-db"
 region="${INPUT_REGION:-${FLY_REGION:-iad}}"
 org="${INPUT_ORG:-${FLY_ORG:-personal}}"
 image="$INPUT_IMAGE"
@@ -28,9 +30,10 @@ if ! echo "$app" | grep "$PR_NUMBER"; then
   exit 1
 fi
 
-# PR was closed - remove the Fly app if one exists and exit.
+# PR was closed - remove the Fly app and DB app if one exists and exit.
 if [ "$EVENT_TYPE" = "closed" ]; then
   flyctl apps destroy "$app" -y || true
+  flyctl apps destroy "$db_app" -y || true
   exit 0
 fi
 
@@ -51,9 +54,9 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha "$INPUT_REDUNDANCY" || true
+  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha "$INPUT_REDUNDANCY" || true
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 fi
 
 # Scale the VM
