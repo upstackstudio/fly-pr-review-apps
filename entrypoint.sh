@@ -18,6 +18,8 @@ EVENT_TYPE=$(jq -r .action /github/workflow/event.json)
 
 # Default the Fly app name to pr-{number}-{repo_name}
 app="${INPUT_NAME:-pr-$PR_NUMBER-$REPO_NAME}"
+# Default the Fly DB app name to pr-{number}-{repo_name}-db
+db_app="$app-db"
 region="${INPUT_REGION:-${FLY_REGION:-iad}}"
 org="${INPUT_ORG:-${FLY_ORG:-personal}}"
 image="$INPUT_IMAGE"
@@ -46,8 +48,9 @@ if ! flyctl status --app "$app"; then
     echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
   fi
 
-  # Attach postgres cluster to the app if specified.
+  # Create and attach postgres cluster to the app if specified.
   if [ -n "$INPUT_POSTGRES" ]; then
+    flyctl postgres create --name "$db_app" --org "$org" --region "$region" --initial-cluster-size 1 --volume-size 1 --vm-size shared-cpu-1x --autostart
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
