@@ -58,8 +58,7 @@ elif [ "$INPUT_UPDATE" != "false" ]; then
   # PR opened - add postgres db app
   if [ "$EVENT_TYPE" = "opened" ]; then
     flyctl postgres create --name "$db_app" --org "$org" --region "$region" --initial-cluster-size 1 --volume-size 1 --vm-size shared-cpu-1x --autostart || true
-    flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true    
-    exit 0
+    flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
   flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha "$INPUT_REDUNDANCY" || true
 fi
