@@ -30,9 +30,10 @@ if ! echo "$app" | grep "$PR_NUMBER"; then
   exit 1
 fi
 
-# PR was closed - remove the Fly app if one exists and exit.
+# PR was closed - remove the Fly app and DB app if one exists and exit.
 if [ "$EVENT_TYPE" = "closed" ]; then
   flyctl apps destroy "$app" -y || true
+  flyctl apps destroy "$db_app" -y || true
   exit 0
 fi
 
@@ -53,14 +54,14 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha "$INPUT_REDUNDANCY" || true
+  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 elif [ "$INPUT_UPDATE" != "false" ]; then
   # PR opened - add postgres db app
   if [ "$EVENT_TYPE" = "opened" ]; then
     flyctl postgres create --name "$db_app" --org "$org" --region "$region" --initial-cluster-size 1 --volume-size 1 --vm-size shared-cpu-1x --autostart || true
     flyctl postgres attach "$db_app" --app "$app" || true
   fi
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha "$INPUT_REDUNDANCY" || true
+  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 fi
 
 # Scale the VM
