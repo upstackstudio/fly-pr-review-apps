@@ -56,6 +56,11 @@ if ! flyctl status --app "$app"; then
 
   flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 elif [ "$INPUT_UPDATE" != "false" ]; then
+  # PR opened - add postgres db app
+  if [ "$EVENT_TYPE" = "opened" ]; then
+    flyctl postgres create --name "$db_app" --org "$org" --region "$region" --initial-cluster-size 1 --volume-size 1 --vm-size shared-cpu-1x --autostart
+    flyctl postgres attach "$db_app" --app "$app"
+  fi
   flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
 fi
 
