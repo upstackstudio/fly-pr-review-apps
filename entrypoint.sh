@@ -36,25 +36,31 @@ if [ "$EVENT_TYPE" = "closed" ]; then
   exit 0
 fi
 
-# Deploy the Fly app, creating it first if needed.
-if ! flyctl status --app "$app"; then
+# Check if the app already exists.
+if flyctl status --app "$app"; then
+  existing_app=true
+else
+  existing_app=false
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
   cp "$config" "$config.bak"
   flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --org "$org"
   # Restore the original config file
   cp "$config.bak" "$config"
 
-  if [ -n "$INPUT_SECRETS" ]; then
-    echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
-  fi
-
   # Attach postgres cluster to the app if specified.
   if [ -n "$INPUT_POSTGRES" ]; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
+fi
 
-  flyctl deploy --config "$config" --app "$app" --strategy immediate --ha=false
-elif [ "$INPUT_UPDATE" != "false" ]; then
+# Always import secrets on every deploy so that new or rotated secrets are
+# present before the release command runs.
+if [ -n "$INPUT_SECRETS" ]; then
+  echo $INPUT_SECRETS | tr " " "\n" | flyctl secrets import --app "$app"
+fi
+
+# Deploy: always for new apps, respects INPUT_UPDATE for existing ones.
+if [ "$existing_app" = "false" ] || [ "$INPUT_UPDATE" != "false" ]; then
   flyctl deploy --config "$config" --app "$app" --strategy immediate --ha=false
 fi
 
