@@ -20,7 +20,6 @@ EVENT_TYPE=$(jq -r .action /github/workflow/event.json)
 app="${INPUT_NAME:-pr-$PR_NUMBER-$REPO_NAME}"
 # Default the Fly DB app name to pr-{number}-{repo_name}-db
 db_app="$app-db"
-region="${INPUT_REGION:-${FLY_REGION:-iad}}"
 org="${INPUT_ORG:-${FLY_ORG:-personal}}"
 image="$INPUT_IMAGE"
 config="${INPUT_CONFIG:-fly.toml}"
@@ -41,7 +40,7 @@ fi
 if ! flyctl status --app "$app"; then
   # Backup the original config file since 'flyctl launch' messes up the [build.args] section
   cp "$config" "$config.bak"
-  flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --region "$region" --org "$org"
+  flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --org "$org"
   # Restore the original config file
   cp "$config.bak" "$config"
 
@@ -54,14 +53,9 @@ if ! flyctl status --app "$app"; then
     flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
   fi
 
-  flyctl deploy --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
+  flyctl deploy --config "$config" --app "$app" --strategy immediate --ha=false
 elif [ "$INPUT_UPDATE" != "false" ]; then
-  # PR opened - add postgres db app
-  if [ "$EVENT_TYPE" = "opened" ]; then
-    flyctl postgres create --name "$db_app" --org "$org" --region "$region" --initial-cluster-size 1 --volume-size 1 --vm-size shared-cpu-1x --autostart
-    flyctl postgres attach "$db_app" --app "$app"
-  fi
-  flyctl deploy --config "$config" --app "$app" --region "$region" --image "$image" --region "$region" --strategy immediate --ha=false
+  flyctl deploy --config "$config" --app "$app" --strategy immediate --ha=false
 fi
 
 # Scale the VM
