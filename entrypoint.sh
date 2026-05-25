@@ -46,11 +46,12 @@ else
   flyctl launch --no-deploy --copy-config --name "$app" --image "$image" --org "$org"
   # Restore the original config file
   cp "$config.bak" "$config"
+fi
 
-  # Attach postgres cluster to the app if specified.
-  if [ -n "$INPUT_POSTGRES" ]; then
-    flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
-  fi
+# Always attach postgres so DATABASE_URL is set, even if a prior run failed
+# before reaching this step. Safe to run repeatedly — errors are suppressed.
+if [ -n "$INPUT_POSTGRES" ]; then
+  flyctl postgres attach --app "$app" "$INPUT_POSTGRES" || true
 fi
 
 # Always import secrets on every deploy so that new or rotated secrets are
